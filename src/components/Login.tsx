@@ -287,7 +287,7 @@ const Login: React.FC = () => {
                                 transition={{ delay: 0.6 }}
                                 whileHover={{ scale: loading ? 1 : 1.02 }}
                                 whileTap={{ scale: loading ? 1 : 0.98 }}
-                                className="relative mt-2 w-full py-3 rounded-md font-bold text-black bg-cyber-cyan hover:bg-cyber-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 overflow-hidden group"
+                                className="relative mt-2 w-full py-3 rounded-md font-bold text-white bg-cyber-cyan hover:bg-cyber-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 overflow-hidden group"
                             >
                                 {/* Button glow effect */}
                                 <motion.div
