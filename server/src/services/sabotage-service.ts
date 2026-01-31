@@ -83,7 +83,7 @@ export async function runSabotage(input: SabotageInput): Promise<SabotageResult 
         ? `\nUser's end goal (intended behavior): ${endGoal}\n`
         : "";
 
-    const prompt = `You are the "Code Saboteur". Your goal is to inject a realistic bug into the user's Python code.
+    const buildPrompt = (strict: boolean) => `You are the "Code Saboteur". Your goal is to inject a realistic bug into the user's Python code.
 ${endGoalSection}
 User Code:
 \`\`\`python
@@ -96,20 +96,55 @@ Specific Tactic: ${pattern.name} (${pattern.description})
 Instructions:
 1. Modify the code to introduce a subtle bug matching the tactic.
 2. Keep the code mostly identical, just change the specific part.
-3. Return ONLY a JSON object with this structure (no markdown, no extra text). In sabotagedCode, use escaped newlines (\\n) not actual line breaks:
-{"sabotagedCode": "line1\\nline2\\nline3", "explanation": "A short cryptic hint, in a gamified way, like a treasure hunt clue, but keep it short.", "type": "${type}"}`;
+${strict ? "3. IMPORTANT: The sabotaged code MUST differ from the original (beyond whitespace). If you struggle, change a single character in a string literal or operator to introduce a clear bug.\n4. The explanation MUST align with the specific change you made." : "3. The explanation should match the specific change you made."}
+${strict ? 5 : 4}. Return using EXACTLY this format with delimiters (no JSON, no markdown):
 
-    try {
+---CODE_START---
+(full sabotaged Python code here)
+---CODE_END---
+---HINT_START---
+(a short cryptic hint, gamified like a treasure hunt clue)
+---HINT_END---`;
+
+    const normalizeCode = (value: string) => value.replace(/\r\n/g, "\n").trim();
+    const isMeaningfullyDifferent = (original: string, sabotaged: string) => {
+        const a = normalizeCode(original);
+        const b = normalizeCode(sabotaged);
+        return a !== b;
+    };
+
+    const parseDelimitedResponse = (text: string): SabotageResult | null => {
+        const codeMatch = text.match(/---CODE_START---\s*([\s\S]*?)\s*---CODE_END---/);
+        const hintMatch = text.match(/---HINT_START---\s*([\s\S]*?)\s*---HINT_END---/);
+        if (!codeMatch || !hintMatch) return null;
+        return {
+            sabotagedCode: codeMatch[1].trim(),
+            explanation: hintMatch[1].trim(),
+            type,
+        };
+    };
+
+    const callGroq = async (strict: boolean): Promise<SabotageResult | null> => {
         const completion = await groq.chat.completions.create({
             model: SABOTAGE_MODEL,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: "user", content: buildPrompt(strict) }],
             temperature: 0.4,
             max_tokens: 2048,
         });
         const text = completion.choices[0]?.message?.content?.trim() ?? "";
-        const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const sanitized = escapeControlCharsInJsonStrings(jsonStr);
-        return JSON.parse(sanitized) as SabotageResult;
+        return parseDelimitedResponse(text);
+    };
+
+    try {
+        const first = await callGroq(false);
+        if (first?.sabotagedCode && isMeaningfullyDifferent(code, first.sabotagedCode)) {
+            return first;
+        }
+        const second = await callGroq(true);
+        if (second?.sabotagedCode && isMeaningfullyDifferent(code, second.sabotagedCode)) {
+            return second;
+        }
+        return null;
     } catch (error) {
         console.error("Sabotage failed:", error);
         return null;

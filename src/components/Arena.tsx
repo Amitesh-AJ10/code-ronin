@@ -20,6 +20,7 @@ const Arena: React.FC = () => {
     const [code, setCode] = useState<string>("# Write your Python code here\nprint('Hello, CodeRonin!')\n");
     const challengeRef = useRef<{ challengeId?: string; docQuery?: string }>({});
     const [output, setOutput] = useState<string>("> Ready for execution...");
+    const [stdin, setStdin] = useState<string>("");
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
     const [initError, setInitError] = useState<string | null>(null);
@@ -45,13 +46,12 @@ const Arena: React.FC = () => {
     
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Mock test cases
-    const testCases = [
-        { id: 1, input: 'print("Hello")', expected: 'Hello', passed: true, hidden: false },
-        { id: 2, input: 'print(2 + 2)', expected: '4', passed: true, hidden: false },
-        { id: 3, input: 'print("Test")', expected: 'Test', passed: null, hidden: true },
-        { id: 4, input: 'print(10 * 5)', expected: '50', passed: null, hidden: true },
-    ];
+    // Test cases (stdin → expected stdout)
+    const [testCases, setTestCases] = useState([
+        { id: 1, input: '3\nAlice,10\nBob,20\nCara,30\n', expected: '20.0', passed: null as boolean | null, hidden: false },
+        { id: 2, input: '2\nZoe,5\nMia,15\n', expected: '10.0', passed: null as boolean | null, hidden: false },
+        { id: 3, input: '1\nSolo,7\n', expected: '7.0', passed: null as boolean | null, hidden: true },
+    ]);
 
     useEffect(() => {
         pyodideManager.init()
@@ -181,7 +181,7 @@ const Arena: React.FC = () => {
         setIsRunning(true);
         setOutput("> Running...");
 
-        const { output: result, error } = await pyodideManager.runCode(code);
+        const { output: result, error } = await pyodideManager.runCode(code, stdin);
 
         if (error) {
             setOutput(`> Error:\n${error}`);
@@ -200,9 +200,37 @@ const Arena: React.FC = () => {
 
     const handleReset = () => {
         setCode("# Write your Python code here\nprint('Hello, CodeRonin!')\n");
+        setStdin("");
         setChaos(0);
         setSabotageEvent(null);
         setOutput("> Ready for execution...");
+        setTestCases(prev => prev.map(tc => ({ ...tc, passed: null })));
+    };
+
+    const handleRunTests = async () => {
+        if (!isPyodideReady || isThinking) return;
+        setIsRunning(true);
+        setOutput("> Running test cases...");
+
+        const updated = [] as typeof testCases;
+        for (const tc of testCases) {
+            const { output: result, error } = await pyodideManager.runCode(code, tc.input);
+            if (error) {
+                updated.push({ ...tc, passed: false });
+                continue;
+            }
+            const normalized = String(result).trim();
+            const expected = String(tc.expected).trim();
+            // Empty output is always a fail (unless expected is also empty)
+            const passed = normalized.length > 0 && normalized === expected;
+            updated.push({ ...tc, passed });
+        }
+
+        setTestCases(updated);
+        const failed = updated.filter(tc => tc.passed === false).length;
+        const passedCount = updated.filter(tc => tc.passed === true).length;
+        setOutput(failed ? `> Tests completed: ${passedCount} passed, ${failed} failed` : "> All tests passed!");
+        setIsRunning(false);
     };
 
     return (
@@ -498,15 +526,43 @@ const Arena: React.FC = () => {
                                 <FlaskConical size={16} className="text-cyan-400" />
                                 <span className="text-sm text-cyan-400 font-bold uppercase tracking-wider">Test Cases</span>
                             </div>
-                            <motion.button
-                                onClick={() => setShowHiddenTests(!showHiddenTests)}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-3 py-1 rounded-md text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500/30 transition-all"
-                            >
-                                {showHiddenTests ? <EyeOff size={12} /> : <Eye size={12} />}
-                                {showHiddenTests ? 'Hide' : 'Show'} Hidden Tests
-                            </motion.button>
+                            <div className="flex items-center gap-2">
+                                <motion.button
+                                    onClick={handleRunTests}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    disabled={!isPyodideReady || isRunning || isThinking}
+                                    className="flex items-center gap-2 px-3 py-1 rounded-md text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500/30 transition-all disabled:opacity-50"
+                                >
+                                    <Play size={12} />
+                                    Run Tests
+                                </motion.button>
+                                <motion.button
+                                    onClick={() => setShowHiddenTests(!showHiddenTests)}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="flex items-center gap-2 px-3 py-1 rounded-md text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-500/30 transition-all"
+                                >
+                                    {showHiddenTests ? <EyeOff size={12} /> : <Eye size={12} />}
+                                    {showHiddenTests ? 'Hide' : 'Show'} Hidden Tests
+                                </motion.button>
+                            </div>
+                        </div>
+
+                        {/* Stdin Input */}
+                        <div className="border-b border-cyan-500/10 bg-black/60">
+                            <div className="flex items-center justify-between px-4 py-2 bg-cyan-500/5">
+                                <div className="flex items-center gap-2">
+                                    <SquareTerminal size={14} className="text-cyan-400" />
+                                    <span className="text-xs text-cyan-400 font-bold uppercase tracking-wider">Program Input (stdin)</span>
+                                </div>
+                            </div>
+                            <textarea
+                                value={stdin}
+                                onChange={(e) => setStdin(e.target.value)}
+                                placeholder="Paste input here (e.g., lines read by sys.stdin.read())"
+                                className="w-full h-24 bg-[#0a0a0a] text-gray-200 font-mono text-xs p-3 outline-none resize-none border-0"
+                            />
                         </div>
 
                         {/* Test Cases Content */}
