@@ -25,7 +25,7 @@ class PyodideManager {
                     await new Promise<void>((resolve, reject) => {
                         const script = document.createElement('script');
                         // Correct URL format: https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js
-                        script.src = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js";
+                        script.src = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js";
                         script.onload = () => resolve();
                         script.onerror = () => reject(new Error("Failed to load Pyodide script from CDN"));
                         document.body.appendChild(script);
@@ -34,10 +34,11 @@ class PyodideManager {
 
                 // @ts-ignore
                 const pyodideInstance = await (window as any).loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
                 });
 
-                await pyodideInstance.loadPackage(['numpy', 'pandas']);
+                await pyodideInstance.loadPackage(['pandas']);
+
                 this.pyodide = pyodideInstance;
                 console.log("Pyodide Ready");
             } catch (error) {

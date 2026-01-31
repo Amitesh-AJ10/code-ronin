@@ -49,13 +49,13 @@ const Arena: React.FC = () => {
     // UI State
     const [showHiddenTests, setShowHiddenTests] = useState<boolean>(false);
     const [_activeTab, _setActiveTab] = useState<'output' | 'testcases'>('output');
-    
+
     // Resizable panels state
     const [editorWidth, setEditorWidth] = useState<number>(60); // percentage
     const [terminalHeight, setTerminalHeight] = useState<number>(50); // percentage of right panel
     const [isResizing, setIsResizing] = useState<boolean>(false);
     const [resizeType, setResizeType] = useState<'horizontal' | 'vertical' | null>(null);
-    
+
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Test cases (stdin → expected stdout)
@@ -77,13 +77,24 @@ const Arena: React.FC = () => {
         const params = new URLSearchParams({ skill, difficulty: difficultyId });
         fetch(`/api/boilerplate?${params}`)
             .then(res => res.ok ? res.json() : null)
-            .then((data: { code?: string; challengeId?: string; docQuery?: string } | null) => {
+            .then((data: { code?: string; challengeId?: string; docQuery?: string; testCases?: { input: string; expected: string; hidden?: boolean }[] } | null) => {
                 if (data?.code) {
                     setCode(data.code);
                     challengeRef.current = { challengeId: data.challengeId, docQuery: data.docQuery };
+
+                    if (data.testCases && data.testCases.length > 0) {
+                        setStdin(data.testCases[0].input);
+                        setTestCases(data.testCases.map((tc, i) => ({
+                            id: i + 1,
+                            input: tc.input,
+                            expected: tc.expected,
+                            passed: null,
+                            hidden: tc.hidden ?? false
+                        })));
+                    }
                 }
             })
-            .catch(() => {});
+            .catch(() => { });
     }, [skill, difficultyId]);
 
     // Auto-dismiss sabotage popup after 5 seconds
@@ -199,7 +210,7 @@ const Arena: React.FC = () => {
         if (error) {
             setOutput(`> Error:\n${error}`);
         } else {
-            setOutput(`> Output:\n${result}`);
+            setOutput(`> Output:\n${result || "(No output generated)"}`);
 
             if (sabotageEvent) {
                 fixSabotage();
@@ -236,7 +247,7 @@ const Arena: React.FC = () => {
             const expected = String(tc.expected).trim();
             // Empty output is always a fail (unless expected is also empty)
             const passed = normalized.length > 0 && normalized === expected;
-            updated.push({ ...tc, passed });
+            updated.push({ ...tc, passed, actual: normalized } as any);
         }
 
         setTestCases(updated);
@@ -260,7 +271,7 @@ const Arena: React.FC = () => {
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyber-cyan to-transparent opacity-50" />
 
                 <div className="flex items-center gap-4">
-                    <motion.h1 
+                    <motion.h1
                         className="text-2xl font-orbitron tracking-widest uppercase"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -268,7 +279,7 @@ const Arena: React.FC = () => {
                         <span className="text-cyber-cyan">Code</span>
                         <span className="text-white">Ronin</span>
                     </motion.h1>
-                    
+
                     {/* Level badge */}
                     <motion.div
                         className="px-3 py-1 rounded-md border-2 border-cyber-cyan/50 bg-cyber-cyan/10"
@@ -296,7 +307,7 @@ const Arena: React.FC = () => {
                             transition={{ type: 'spring', damping: 20 }}
                         />
                         {chaos >= 90 && (
-                            <motion.div 
+                            <motion.div
                                 className="absolute inset-0 bg-white/20"
                                 animate={{ opacity: [0.2, 0.5, 0.2] }}
                                 transition={{ duration: 0.5, repeat: Infinity }}
@@ -431,9 +442,9 @@ const Arena: React.FC = () => {
                                 className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-bold transition-all
                                     ${isPyodideReady
                                         ? 'bg-cyber-cyan/20 text-cyber-cyan hover:bg-cyber-cyan hover:text-black border-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,243,255,0.3)]'
-                                        : initError 
-                                        ? 'bg-red-900/50 text-red-200 hover:bg-red-800 cursor-pointer border-2 border-red-500' 
-                                        : 'bg-gray-800 text-gray-500 cursor-not-allowed border-2 border-gray-700'}`}
+                                        : initError
+                                            ? 'bg-red-900/50 text-red-200 hover:bg-red-800 cursor-pointer border-2 border-red-500'
+                                            : 'bg-gray-800 text-gray-500 cursor-not-allowed border-2 border-gray-700'}`}
                             >
                                 <Play size={14} />
                                 {initError ? 'RETRY' : !isPyodideReady ? 'LOADING...' : isRunning ? 'RUNNING...' : 'RUN CODE'}
@@ -589,13 +600,12 @@ const Arena: React.FC = () => {
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: idx * 0.05 }}
-                                            className={`p-3 rounded-lg border-2 ${
-                                                tc.passed === true 
-                                                    ? 'bg-green-500/5 border-green-500/30'
-                                                    : tc.passed === false
+                                            className={`p-3 rounded-lg border-2 ${tc.passed === true
+                                                ? 'bg-green-500/5 border-green-500/30'
+                                                : tc.passed === false
                                                     ? 'bg-red-500/5 border-red-500/30'
                                                     : 'bg-gray-800/30 border-gray-700/50'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center gap-2">
@@ -616,15 +626,25 @@ const Arena: React.FC = () => {
                                             <div className="space-y-2 text-xs font-mono">
                                                 <div>
                                                     <span className="text-gray-500">Input:</span>
-                                                    <div className="mt-1 p-2 bg-black/40 rounded border border-gray-800 text-gray-300">
+                                                    <div className="mt-1 p-2 bg-black/40 rounded border border-gray-800 text-gray-300 whitespace-pre-wrap">
                                                         {tc.input}
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <span className="text-gray-500">Expected:</span>
-                                                    <div className="mt-1 p-2 bg-black/40 rounded border border-gray-800 text-gray-300">
-                                                        {tc.expected}
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <span className="text-gray-500">Expected:</span>
+                                                        <div className="mt-1 p-2 bg-black/40 rounded border border-gray-800 text-gray-300 whitespace-pre-wrap">
+                                                            {tc.expected}
+                                                        </div>
                                                     </div>
+                                                    {tc.passed === false && (
+                                                        <div>
+                                                            <span className="text-red-400">Actual Output:</span>
+                                                            <div className="mt-1 p-2 bg-red-900/10 rounded border border-red-500/30 text-red-200 whitespace-pre-wrap">
+                                                                {(tc as any).actual || "(No output)"}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </motion.div>
