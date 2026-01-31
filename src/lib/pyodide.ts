@@ -1,4 +1,4 @@
-import { loadPyodide, PyodideInterface } from 'pyodide';
+import type { PyodideInterface } from 'pyodide';
 
 class PyodideManager {
     private static instance: PyodideManager;
@@ -18,34 +18,32 @@ class PyodideManager {
         if (this.pyodide) return;
         if (this.initPromise) return this.initPromise;
 
-        this.isLoading = true;
         this.initPromise = (async () => {
             try {
-                let pyodideInstance: PyodideInterface;
-
-                // We use the CDN script injected in index.html, so 'loadPyodide' should be available globally
-                // or we can import it if we configured the bundler correctly.
-                // For this hackathon setup relying on the CDN script is safer for asset loading.
-                // @ts-ignore - loadPyodide might be global if we use the script tag
-                if (typeof (window as any).loadPyodide === 'function') {
-                    pyodideInstance = await (window as any).loadPyodide({
-                        indexURL: "https://cdn.jsdelivr.net/npm/pyodide@0.29.3/full/"
-                    });
-                } else {
-                    // Fallback to npm package if global is not found (though index.html has it)
-                    pyodideInstance = await loadPyodide({
-                        indexURL: "https://cdn.jsdelivr.net/npm/pyodide@0.29.3/full/"
+                if (typeof (window as any).loadPyodide !== 'function') {
+                    console.log("Loading Pyodide script dynamically...");
+                    await new Promise<void>((resolve, reject) => {
+                        const script = document.createElement('script');
+                        // Correct URL format: https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js
+                        script.src = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js";
+                        script.onload = () => resolve();
+                        script.onerror = () => reject(new Error("Failed to load Pyodide script from CDN"));
+                        document.body.appendChild(script);
                     });
                 }
 
-                await pyodideInstance.loadPackage(['numpy', 'pandas']); // Preload common data science libs
+                // @ts-ignore
+                const pyodideInstance = await (window as any).loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
+                });
+
+                await pyodideInstance.loadPackage(['numpy', 'pandas']);
                 this.pyodide = pyodideInstance;
                 console.log("Pyodide Ready");
             } catch (error) {
                 console.error("Failed to load Pyodide:", error);
+                this.initPromise = null; // Allow retry
                 throw error;
-            } finally {
-                this.isLoading = false;
             }
         })();
 
