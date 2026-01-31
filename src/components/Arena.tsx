@@ -74,6 +74,16 @@ const Arena: React.FC = () => {
             .catch(() => {});
     }, [skill, difficultyId]);
 
+    // Auto-dismiss sabotage popup after 5 seconds
+    useEffect(() => {
+        if (sabotageEvent) {
+            const timer = setTimeout(() => {
+                setSabotageEvent(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [sabotageEvent]);
+
     // Resizing logic
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
@@ -159,6 +169,11 @@ const Arena: React.FC = () => {
         setSabotageEvent(null);
         setChaos(0);
         setOutput("> Sabotage Resolved. System Normal.");
+    };
+
+    const dismissSabotage = () => {
+        setSabotageEvent(null);
+        setChaos(0);
     };
 
     const handleRun = async () => {
@@ -259,15 +274,32 @@ const Arena: React.FC = () => {
             {/* Main Content */}
             <main ref={containerRef} className="flex-1 flex gap-0 overflow-hidden relative">
 
-                {/* Sabotage Overlay */}
+                {/* Sabotage Overlay - Click to Dismiss */}
+                <AnimatePresence>
+                    {sabotageEvent && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={dismissSabotage}
+                            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Sabotage Popup */}
                 <AnimatePresence>
                     {sabotageEvent && (
                         <motion.div
                             initial={{ opacity: 0, y: -30, scale: 0.9 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -30, scale: 0.9 }}
-                            className="absolute top-8 left-1/2 -translate-x-1/2 z-50 bg-black/95 border-2 border-red-500 text-red-500 px-8 py-5 rounded-lg shadow-[0_0_40px_rgba(255,0,60,0.6)] max-w-xl text-center backdrop-blur-xl"
+                            exit={{ opacity: 0, y: 30, scale: 0.9 }}
+                            className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
                         >
+                            <motion.div
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-black/95 border-2 border-red-500 text-red-500 px-8 py-6 rounded-lg shadow-[0_0_40px_rgba(255,0,60,0.6)] max-w-xl text-center backdrop-blur-xl pointer-events-auto"
+                            >
                             <motion.div
                                 className="absolute inset-0 bg-red-500/10 rounded-lg"
                                 animate={{ opacity: [0.1, 0.3, 0.1] }}
@@ -285,6 +317,7 @@ const Arena: React.FC = () => {
                                     </span>
                                 </div>
                             </div>
+                            </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>
