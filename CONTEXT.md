@@ -39,26 +39,9 @@ To maximize performance in a 10-hour hackathon, we use a **Serverless Thick-Clie
     - Code: 'JetBrains Mono' (Professional feel).
 - **Atmosphere:** Terminal-style overlays, CRT scanline effects, and reactive glitch animations.
 
-## 6. PAGE FLOW & ROUTING
-1. **Landing** (`Landing.tsx`) — Short intro animation, then cut to Login.
-2. **Auth** — **Login** (`Login.tsx`). If new user → **Register** (`Register.tsx`) → after signup return to Login. **Supabase** handles auth and session/caching.
-3. **Skills** (`Skills.tsx`) — Four skill buttons: **Pandas**, **OOPS**, **CP**, **Cryptograph**. Selection is persisted (backend/Supabase) and drives which chaos knowledge/agent behavior is used.
-4. **Difficulty** (`Difficulty.tsx`) — Three difficulty buttons matching game mechanics:
-   - **Syntax Goblin:** Beginner bugs (missing colons, typos).
-   - **Logic Gremlin:** Intermediate bugs (off-by-one errors, state mutation issues).
-   - **Semantic Impostor:** Advanced bugs (subtle library misuses from docs).  
-   Selection is persisted (backend/Supabase).
-5. **Arena** (`Arena.tsx`) — Main dojo (Monaco + Pyodide). **TODO:** Add test cases to the terminal bar; make terminal bar smaller; add bottom margins so it doesn’t touch the screen edge.
-
-## 7. FILE STRUCTURE & GUIDELINES
-- `src/components/Landing.tsx`: Intro animation, then navigate to Login.
-- `src/components/Login.tsx`: Sign-in (Supabase). Link to Register for new users.
-- `src/components/Register.tsx`: Sign-up (Supabase). On success, redirect to Login.
-- `src/components/Skills.tsx`: Skill selection (Pandas / OOPS / CP / Cryptograph); persists selection.
-- `src/components/Difficulty.tsx`: Difficulty selection (Syntax Goblin / Logic Gremlin / Semantic Impostor); persists selection.
-- `src/components/Arena.tsx`: The heart of the app (Monaco + Pyodide output, terminal with test cases, smaller bar, bottom margins).
-- `src/lib/supabase.ts`: Supabase client (auth + optional persistence/caching).
+## 6. FILE STRUCTURE & GUIDELINES
+- `src/components/Arena.tsx`: The heart of the app (Monaco + Pyodide Output).
 - `src/lib/pyodide.ts`: Singleton to manage Python runtime.
 - `src/lib/gemini.ts`: Saboteur Agent logic.
 - `src/data/chaos-knowledge.ts`: The "Documentation Knowledge Base" for the Agent.
-- `.env.local`: `VITE_GEMINI_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. (DO NOT COMMIT).
+- `.env.local`: Contains `VITE_GEMINI_API_KEY`. (DO NOT COMMIT).
