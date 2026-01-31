@@ -42,9 +42,8 @@ const Skills: React.FC = () => {
 
     const handleSkill = (skill: string) => {
         setSelectedSkill(skill);
-        // TODO: persist skill selection (Supabase/backend)
         setTimeout(() => {
-            navigate('/difficulty', { replace: true });
+            navigate('/difficulty', { replace: true, state: { skill } });
         }, 600);
     };
 

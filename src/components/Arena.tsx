@@ -1,12 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import Editor, { type OnChange } from '@monaco-editor/react';
 import { Play, SquareTerminal, AlertTriangle, CheckCircle2, FlaskConical, Eye, EyeOff, GripVertical, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 import { pyodideManager } from '../lib/pyodide';
 import { motion, AnimatePresence } from 'framer-motion';
-import { saboteurAgent, type SabotageResult } from '../lib/gemini';
 import Confetti from 'react-confetti';
 
+export interface SabotageResult {
+    sabotagedCode: string;
+    explanation: string;
+    type: 'syntax' | 'logic' | 'semantic';
+}
+
 const Arena: React.FC = () => {
+    const location = useLocation();
+    const arenaState = (location.state as { skill?: string; difficultyId?: string } | null) ?? {};
+    const { skill, difficultyId } = arenaState;
     const [code, setCode] = useState<string>("# Write your Python code here\nprint('Hello, CodeRonin!')\n");
     const [output, setOutput] = useState<string>("> Ready for execution...");
     const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -98,7 +107,22 @@ const Arena: React.FC = () => {
 
     const triggerSabotage = async (currentCode: string) => {
         setIsThinking(true);
-        const result = await saboteurAgent.sabotage(currentCode, level * 20);
+        let result: SabotageResult | null = null;
+        try {
+            const res = await fetch('/api/sabotage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: currentCode,
+                    difficulty: level * 20,
+                    skill: skill ?? undefined,
+                    endGoal: undefined,
+                }),
+            });
+            if (res.ok) result = (await res.json()) as SabotageResult;
+        } catch (e) {
+            console.error('Sabotage API error:', e);
+        }
         setIsThinking(false);
 
         if (result) {
