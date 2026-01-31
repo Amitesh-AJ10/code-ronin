@@ -10,6 +10,7 @@ export default {
         neon: {
           cyan: "#00f3ff",
           purple: "#bc13fe",
+          red: "#ff003c",
           bg: "#050505",
         },
         glitch: {
