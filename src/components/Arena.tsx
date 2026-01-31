@@ -34,6 +34,18 @@ const Arena: React.FC = () => {
     const [isThinking, setIsThinking] = useState<boolean>(false);
     const [won, setWon] = useState<boolean>(false);
 
+    // Set initial level based on difficulty
+    useEffect(() => {
+        const difficultyMap: Record<string, number> = {
+            'syntax': 1,
+            'logic': 2,
+            'semantic': 3,
+        };
+        if (difficultyId && difficultyMap[difficultyId]) {
+            setLevel(difficultyMap[difficultyId]);
+        }
+    }, [difficultyId]);
+
     // UI State
     const [showHiddenTests, setShowHiddenTests] = useState<boolean>(false);
     const [_activeTab, _setActiveTab] = useState<'output' | 'testcases'>('output');
