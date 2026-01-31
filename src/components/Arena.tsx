@@ -5,6 +5,7 @@ import { Play, SquareTerminal, AlertTriangle, CheckCircle2, FlaskConical, Eye, E
 import { pyodideManager } from '../lib/pyodide';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
+import { useBackButton } from '../lib/useBackButton';
 
 export interface SabotageResult {
     sabotagedCode: string;
@@ -21,6 +22,8 @@ const Arena: React.FC = () => {
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
     const [initError, setInitError] = useState<string | null>(null);
+
+    useBackButton();
 
     // Game State
     const [chaos, setChaos] = useState<number>(0);

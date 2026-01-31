@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Skull, Zap, Flame, AlertTriangle, ShieldAlert, Swords, ChevronRight } from 'lucide-react';
+import { useBackButton } from '../lib/useBackButton';
 
 const DIFFICULTIES = [
     { 
@@ -42,6 +43,8 @@ const Difficulty: React.FC = () => {
     const skill = (location.state as { skill?: string } | null)?.skill;
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
+
+    useBackButton();
 
     const handleDifficulty = (id: string) => {
         setSelectedDifficulty(id);
