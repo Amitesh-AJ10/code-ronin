@@ -11,7 +11,7 @@ const SKILL_TO_KEY: Record<string, string> = {
     oops: "oops",
     CP: "cp",
     cp: "cp",
-    Cryptograph: "cryptography",
+    Cryptography: "cryptography",
     cryptography: "cryptography",
 };
 
