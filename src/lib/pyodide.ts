@@ -50,21 +50,30 @@ class PyodideManager {
         return this.initPromise;
     }
 
-    public async runCode(code: string): Promise<{ output: string; error: string | null }> {
+    public async runCode(code: string, stdin: string = ""): Promise<{ output: string; error: string | null }> {
         if (!this.pyodide) {
             await this.init();
         }
 
         try {
-            // Capture stdout
+            // Set up stdin as a global variable first, then use it in Python
+            this.pyodide!.globals.set("__stdin_input__", stdin);
+
+            // Capture stdout/stderr and set stdin from the JS variable
             this.pyodide!.runPython(`
 import sys
 import io
 sys.stdout = io.StringIO()
 sys.stderr = io.StringIO()
+sys.stdin = io.StringIO(__stdin_input__)
 `);
 
-            await this.pyodide!.runPythonAsync(code);
+            // Wrap the user code so __name__ == "__main__" works
+            const wrappedCode = `
+__name__ = "__main__"
+${code}
+`;
+            await this.pyodide!.runPythonAsync(wrappedCode);
 
             const stdout = this.pyodide!.runPython("sys.stdout.getvalue()");
             const stderr = this.pyodide!.runPython("sys.stderr.getvalue()");
