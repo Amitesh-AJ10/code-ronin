@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import Editor, { type OnChange } from '@monaco-editor/react';
-import { Play, SquareTerminal, AlertTriangle, CheckCircle2, FlaskConical, Eye, EyeOff, GripVertical, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
+import { Play, SquareTerminal, AlertTriangle, CheckCircle2, FlaskConical, Eye, EyeOff, GripVertical, RotateCcw } from 'lucide-react';
 import { pyodideManager } from '../lib/pyodide';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
@@ -18,6 +18,7 @@ const Arena: React.FC = () => {
     const arenaState = (location.state as { skill?: string; difficultyId?: string } | null) ?? {};
     const { skill, difficultyId } = arenaState;
     const [code, setCode] = useState<string>("# Write your Python code here\nprint('Hello, CodeRonin!')\n");
+    const challengeRef = useRef<{ challengeId?: string; docQuery?: string }>({});
     const [output, setOutput] = useState<string>("> Ready for execution...");
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [isPyodideReady, setIsPyodideReady] = useState<boolean>(false);
@@ -34,7 +35,7 @@ const Arena: React.FC = () => {
 
     // UI State
     const [showHiddenTests, setShowHiddenTests] = useState<boolean>(false);
-    const [activeTab, setActiveTab] = useState<'output' | 'testcases'>('output');
+    const [_activeTab, _setActiveTab] = useState<'output' | 'testcases'>('output');
     
     // Resizable panels state
     const [editorWidth, setEditorWidth] = useState<number>(60); // percentage
@@ -57,6 +58,21 @@ const Arena: React.FC = () => {
             .then(() => setIsPyodideReady(true))
             .catch(err => setInitError(err.message || "Failed to load Pyodide"));
     }, []);
+
+    // Fetch boilerplate for (skill, difficulty) when entering Arena
+    useEffect(() => {
+        if (!skill || !difficultyId) return;
+        const params = new URLSearchParams({ skill, difficulty: difficultyId });
+        fetch(`/api/boilerplate?${params}`)
+            .then(res => res.ok ? res.json() : null)
+            .then((data: { code?: string; challengeId?: string; docQuery?: string } | null) => {
+                if (data?.code) {
+                    setCode(data.code);
+                    challengeRef.current = { challengeId: data.challengeId, docQuery: data.docQuery };
+                }
+            })
+            .catch(() => {});
+    }, [skill, difficultyId]);
 
     // Resizing logic
     useEffect(() => {
@@ -120,6 +136,8 @@ const Arena: React.FC = () => {
                     difficulty: level * 20,
                     skill: skill ?? undefined,
                     endGoal: undefined,
+                    challengeId: challengeRef.current.challengeId,
+                    docQuery: challengeRef.current.docQuery,
                 }),
             });
             if (res.ok) result = (await res.json()) as SabotageResult;
