@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Database, Cpu, Zap, Lock, Terminal, ChevronRight, Sparkles } from 'lucide-react';
+import { useBackButton } from '../lib/useBackButton';
 
 const SKILLS = [
     { 
@@ -39,6 +40,8 @@ const Skills: React.FC = () => {
     const navigate = useNavigate();
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+
+    useBackButton();
 
     const handleSkill = (skill: string) => {
         setSelectedSkill(skill);
