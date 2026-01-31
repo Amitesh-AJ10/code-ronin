@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.chaosResources = void 0;
-exports.chaosResources = {
+export const chaosResources = {
     syntax: [
         { name: "The Missing Colon", description: "Remove a colon after if/else/def/for statements." },
         { name: "Indentation Ghost", description: "Slightly misalign indentation in a block." },

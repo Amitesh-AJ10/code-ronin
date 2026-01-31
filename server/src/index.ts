@@ -16,6 +16,7 @@ import express from "express";
 import cors from "cors";
 import { chaosResources } from "./resources.js";
 import { runSabotage } from "./services/sabotage-service.js";
+import { getBoilerplate } from "./services/boilerplate-service.js";
 
 const app = express();
 app.use(cors());
@@ -82,10 +83,23 @@ app.post("/message", async (req, res) => {
     }
 });
 
-// Sabotage API: backend runs saboteur with chaos + doc context + Gemini
+// Boilerplate API: returns random template for (skill, difficulty) for Arena initial code
+app.get("/api/boilerplate", (req, res) => {
+    try {
+        const skill = typeof req.query.skill === "string" ? req.query.skill : "";
+        const difficulty = typeof req.query.difficulty === "string" ? req.query.difficulty : "syntax";
+        const result = getBoilerplate(skill, difficulty);
+        res.json(result);
+    } catch (e) {
+        console.error("GET /api/boilerplate error:", e);
+        res.status(500).json({ error: "Boilerplate failed" });
+    }
+});
+
+// Sabotage API: backend runs saboteur with chaos + doc context (from store) + Groq
 app.post("/api/sabotage", async (req, res) => {
     try {
-        const { code, difficulty, skill, endGoal } = req.body ?? {};
+        const { code, difficulty, skill, endGoal, challengeId, docQuery } = req.body ?? {};
         if (typeof code !== "string" || typeof difficulty !== "number") {
             res.status(400).json({ error: "Missing or invalid code / difficulty" });
             return;
@@ -95,6 +109,8 @@ app.post("/api/sabotage", async (req, res) => {
             difficulty,
             skill: typeof skill === "string" ? skill : undefined,
             endGoal: typeof endGoal === "string" ? endGoal : undefined,
+            challengeId: typeof challengeId === "string" ? challengeId : undefined,
+            docQuery: typeof docQuery === "string" ? docQuery : undefined,
         });
         if (!result) {
             res.status(503).json({ error: "Sabotage unavailable (check GROQ_API_KEY)" });
