@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Skull, Zap, Flame, AlertTriangle, ShieldAlert, Swords, ChevronRight } from 'lucide-react';
 
@@ -38,14 +38,15 @@ const DIFFICULTIES = [
 
 const Difficulty: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const skill = (location.state as { skill?: string } | null)?.skill;
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(null);
 
     const handleDifficulty = (id: string) => {
         setSelectedDifficulty(id);
-        // TODO: persist difficulty (Supabase/backend)
         setTimeout(() => {
-            navigate('/arena', { replace: true });
+            navigate('/arena', { replace: true, state: { skill, difficultyId: id } });
         }, 800);
     };
 
