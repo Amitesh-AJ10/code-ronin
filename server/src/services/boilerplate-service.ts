@@ -16,6 +16,7 @@ export interface BoilerplateResult {
     code: string;
     challengeId?: string;
     docQuery?: string;
+    testCases?: { input: string; expected: string; hidden?: boolean }[];
 }
 
 const VALID_DIFFICULTY_IDS: DifficultyId[] = ["syntax", "logic", "semantic"];
@@ -55,5 +56,6 @@ export function getBoilerplate(skill: string, difficultyId: string): Boilerplate
         code: template.code,
         challengeId: template.id,
         docQuery: template.docQuery,
+        testCases: template.testCases,
     };
 }
