@@ -79,6 +79,7 @@ const Arena: React.FC = () => {
         if (sabotageEvent) {
             const timer = setTimeout(() => {
                 setSabotageEvent(null);
+                setChaos(0);
             }, 5000);
             return () => clearTimeout(timer);
         }
