@@ -10,7 +10,6 @@ const SKILLS = [
         color: '#00f3ff',
         gradient: 'from-cyan-500 to-blue-500',
         description: 'Data manipulation & analysis',
-        difficulty: 'Intermediate'  // ← REMOVE THIS LINE
     },
     { 
         name: 'OOPS', 
@@ -18,7 +17,7 @@ const SKILLS = [
         color: '#ff003c',
         gradient: 'from-red-500 to-pink-500',
         description: 'Object-oriented programming',
-        difficulty: 'Advanced'  // ← REMOVE THIS LINE
+        
     },
     { 
         name: 'CP', 
@@ -26,15 +25,13 @@ const SKILLS = [
         color: '#ffd700',
         gradient: 'from-yellow-500 to-orange-500',
         description: 'Competitive programming',
-        difficulty: 'Expert'  // ← REMOVE THIS LINE
     },
     { 
-        name: 'Cryptograph', 
+        name: 'Cryptography', 
         icon: Lock, 
         color: '#9d4edd',
         gradient: 'from-purple-500 to-violet-500',
         description: 'Encryption & security',
-        difficulty: 'Advanced'  // ← REMOVE THIS LINE
     }
 ] as const;
 
