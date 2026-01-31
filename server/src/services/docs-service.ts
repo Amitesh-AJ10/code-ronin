@@ -1,10 +1,11 @@
 /**
  * Docs service: returns skill-specific doc text for the saboteur.
- * - Library skills (e.g. Pandas): use getDocsFromDocret (Serper + official docs).
+ * - Library skills (e.g. Pandas): use local doc store first; on miss, fetch via docret then store.
  * - Other skills (OOPS, CP, Cryptography): use static docData (LLM + code + end goal).
  */
 import { docData } from "../docs.js";
 import { getDocsFromSerper, DOCS_SITES } from "./docret-fetcher.js";
+import { getDoc, setDoc } from "./doc-store.js";
 
 const SKILL_TO_KEY: Record<string, string> = {
     Pandas: "pandas",
@@ -49,7 +50,7 @@ export async function getDocsFromDocret(
 }
 
 /**
- * Get doc context for the saboteur: for library skills try docret, else use static docs.
+ * Get doc context for the saboteur: for library skills use local store first, then docret; else use static docs.
  * query: e.g. "DataFrame merge" for Pandas; fallbackQuery used when docret returns nothing.
  */
 export async function getDocContextForSkill(
@@ -57,14 +58,24 @@ export async function getDocContextForSkill(
     query: string,
     fallbackQuery?: string
 ): Promise<string | null> {
-    const key = SKILL_TO_KEY[skill] ?? skill.toLowerCase();
-    const library = LIBRARY_SKILLS[skill] ?? LIBRARY_SKILLS[key];
+    const skillKey = SKILL_TO_KEY[skill] ?? skill.toLowerCase();
+    const library = LIBRARY_SKILLS[skill] ?? LIBRARY_SKILLS[skillKey];
     if (library) {
+        const cached = getDoc(skillKey, query);
+        if (cached) return cached;
         const fromDocret = await getDocsFromDocret(query, library);
-        if (fromDocret) return fromDocret;
+        if (fromDocret) {
+            setDoc(skillKey, query, fromDocret);
+            return fromDocret;
+        }
         if (fallbackQuery && fallbackQuery !== query) {
+            const cachedFallback = getDoc(skillKey, fallbackQuery);
+            if (cachedFallback) return cachedFallback;
             const retry = await getDocsFromDocret(fallbackQuery, library);
-            if (retry) return retry;
+            if (retry) {
+                setDoc(skillKey, fallbackQuery, retry);
+                return retry;
+            }
         }
     }
     return getDocsForSkill(skill);

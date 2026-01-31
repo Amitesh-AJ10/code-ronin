@@ -31,6 +31,9 @@ export interface SabotageInput {
     difficulty: number;
     skill?: string;
     endGoal?: string;
+    /** Optional: use this doc query for context (from boilerplate challenge) instead of deriving from code. */
+    docQuery?: string;
+    challengeId?: string;
 }
 
 /**
@@ -55,7 +58,7 @@ export async function runSabotage(input: SabotageInput): Promise<SabotageResult 
         return null;
     }
 
-    const { code, difficulty, skill, endGoal } = input;
+    const { code, difficulty, skill, endGoal, docQuery: explicitDocQuery } = input;
 
     // Sabotage type from difficulty (0–33: syntax, 33–66: logic, 66+: semantic)
     let type: SabotageType = "syntax";
@@ -65,10 +68,10 @@ export async function runSabotage(input: SabotageInput): Promise<SabotageResult 
     const patterns = chaosResources[type];
     const pattern = patterns[Math.floor(Math.random() * patterns.length)];
 
-    // Doc context: for library skills try docret-style fetch, else static docs
+    // Doc context: use explicit docQuery from boilerplate when provided, else derive from code; then store-first fetch
     let docContext: string | null = null;
     if (skill) {
-        const query = queryFromCode(code, skill);
+        const query = explicitDocQuery ?? queryFromCode(code, skill);
         docContext = await getDocContextForSkill(skill, query, "common errors");
     }
 
@@ -94,7 +97,7 @@ Instructions:
 1. Modify the code to introduce a subtle bug matching the tactic.
 2. Keep the code mostly identical, just change the specific part.
 3. Return ONLY a JSON object with this structure (no markdown, no extra text). In sabotagedCode, use escaped newlines (\\n) not actual line breaks:
-{"sabotagedCode": "line1\\nline2\\nline3", "explanation": "A short cryptic hint.", "type": "${type}"}`;
+{"sabotagedCode": "line1\\nline2\\nline3", "explanation": "A short cryptic hint, in a gamified way, like a treasure hunt clue, but keep it short.", "type": "${type}"}`;
 
     try {
         const completion = await groq.chat.completions.create({
