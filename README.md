@@ -17,7 +17,7 @@ Traditional coding platforms only teach the "Happy Path." CodeRonin flips the sc
 ### The Game Loop
 
 1. **Select Your Skill**
-   - Choose from: **Pandas** (data manipulation), **OOPS** (object-oriented programming), **CP** (competitive programming), or **Cryptograph** (encryption & security).
+   - Choose from: **Pandas** (data manipulation), **OOPS** (object-oriented programming), **CP** (competitive programming), or **Cryptography** (encryption & security).
 
 2. **Choose Difficulty**
    - **Syntax Goblin** (Level 1): Beginner bugs (missing colons, typos, basic syntax errors).
