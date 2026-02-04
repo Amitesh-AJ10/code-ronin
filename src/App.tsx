@@ -1,17 +1,26 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Landing from './components/Landing';
+import Login from './components/Login';
+import Register from './components/Register';
+import Skills from './components/Skills';
+import Difficulty from './components/Difficulty';
+import Arena from './components/Arena';
+import './App.css';
+
 function App() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-neon-bg text-white p-4">
-      <h1 className="text-6xl font-orbitron text-neon-cyan animate-pulse">
-        CODE RONIN
-      </h1>
-      <p className="mt-4 font-mono text-glitch-red">
-        [ SYSTEM READY: AMITESH | KAUSTUBH | ABHINAV ]
-      </p>
-      <div className="mt-8 p-4 border border-neon-cyan rounded shadow-[0_0_15px_rgba(0,243,255,0.5)]">
-        Vibe Coding Initialized...
-      </div>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/skills" element={<Skills />} />
+        <Route path="/difficulty" element={<Difficulty />} />
+        <Route path="/arena" element={<Arena />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
